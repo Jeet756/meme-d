@@ -1,0 +1,23 @@
+# Optional Render Blueprint. You can also create the service by hand (see DEPLOYMENT_GUIDE.md).
+services:
+  - type: web
+    name: memed-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install --include=dev && npm run build && npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: TRUST_PROXY_HOPS
+        value: "2"

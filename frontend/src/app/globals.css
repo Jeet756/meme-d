@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    background: #0b0712;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-ink-950 font-sans text-fog-100 antialiased;
+    background-image:
+      radial-gradient(60rem 32rem at 85% -10%, rgb(139 92 246 / 0.16), transparent 60%),
+      radial-gradient(40rem 28rem at -10% 20%, rgb(91 47 203 / 0.12), transparent 60%);
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3 {
+    @apply font-display tracking-tight text-fog-50;
+  }
+
+  ::selection {
+    @apply bg-violet-500/40 text-white;
+  }
+
+  /* One consistent, clearly visible keyboard focus ring everywhere. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-lime-400 ring-offset-2 ring-offset-ink-950;
+  }
+
+  input[type='range'] {
+    @apply h-2 w-full cursor-pointer appearance-none rounded-full bg-ink-600;
+  }
+  input[type='range']::-webkit-slider-thumb {
+    @apply h-6 w-6 cursor-grab appearance-none rounded-full border-2 border-ink-950 bg-lime-400 shadow-glow;
+  }
+  input[type='range']::-moz-range-thumb {
+    @apply h-6 w-6 cursor-grab rounded-full border-2 border-ink-950 bg-lime-400;
+  }
+}
+
+@layer components {
+  .skeleton {
+    @apply relative overflow-hidden rounded-control bg-ink-700/70;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/[0.06] to-transparent;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

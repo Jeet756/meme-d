@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.next/
+out/
+coverage/
+*.log
+.DS_Store
+.vercel/
+*.tsbuildinfo
+
+# Secrets: never commit these
+.env
+.env.*
+!.env.example

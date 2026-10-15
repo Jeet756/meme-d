@@ -1,0 +1,123 @@
+// Money is stored as integer paise (1 rupee = 100 paise) so no floating point is ever involved.
+// Column-level CHECK constraints (budget >= spent, positive amounts) live in the migration SQL
+// because Prisma's schema language cannot express them.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  brand
+  creator
+}
+
+enum Platform {
+  instagram
+  youtube
+}
+
+enum CampaignStatus {
+  draft
+  live
+  completed
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  campaigns   Campaign[]
+  submissions Submission[]
+  payouts     PayoutLedgerEntry[]
+}
+
+model Campaign {
+  id          String         @id @default(uuid()) @db.Uuid
+  brandId     String         @db.Uuid
+  name        String
+  description String
+  platform    Platform
+  status      CampaignStatus @default(live)
+  budgetPaise Int
+  spentPaise  Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  brand       User                @relation(fields: [brandId], references: [id])
+  milestones  Milestone[]
+  submissions Submission[]
+  payouts     PayoutLedgerEntry[]
+
+  @@index([brandId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model Milestone {
+  id          String @id @default(uuid()) @db.Uuid
+  campaignId  String @db.Uuid
+  minViews    Int
+  payoutPaise Int
+
+  campaign Campaign            @relation(fields: [campaignId], references: [id])
+  payouts  PayoutLedgerEntry[]
+
+  @@unique([campaignId, minViews])
+}
+
+model Submission {
+  id             String   @id @default(uuid()) @db.Uuid
+  campaignId     String   @db.Uuid
+  creatorId      String   @db.Uuid
+  postUrl        String
+  viewCount      Int      @default(0)
+  earnedPaise    Int      @default(0)
+  suspicious     Boolean  @default(false)
+  viewsUpdatedAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  campaign Campaign            @relation(fields: [campaignId], references: [id])
+  creator  User                @relation(fields: [creatorId], references: [id])
+  payouts  PayoutLedgerEntry[]
+
+  @@unique([campaignId, postUrl])
+  @@index([creatorId, createdAt(sort: Desc)])
+  @@index([campaignId, createdAt(sort: Desc)])
+}
+
+// One row per payout event. Never updated or deleted by application code.
+// SUM(amountPaise) per campaign must always equal Campaign.spentPaise.
+model PayoutLedgerEntry {
+  id                  String   @id @default(uuid()) @db.Uuid
+  campaignId          String   @db.Uuid
+  submissionId        String   @db.Uuid
+  creatorId           String   @db.Uuid
+  milestoneId         String   @db.Uuid
+  amountPaise         Int
+  previousEarnedPaise Int
+  newEarnedPaise      Int
+  viewsAtAward        Int
+  // "<submissionId>:<newEarnedPaise>": earned totals only ever grow, so each total can be recorded once.
+  idempotencyKey      String   @unique
+  createdAt           DateTime @default(now())
+
+  campaign   Campaign   @relation(fields: [campaignId], references: [id])
+  submission Submission @relation(fields: [submissionId], references: [id])
+  creator    User       @relation(fields: [creatorId], references: [id])
+  milestone  Milestone  @relation(fields: [milestoneId], references: [id])
+
+  @@index([creatorId, createdAt(sort: Desc)])
+  @@index([campaignId, createdAt(sort: Desc)])
+  @@index([submissionId])
+}
